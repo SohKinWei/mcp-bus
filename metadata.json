@@ -1,0 +1,7 @@
+{
+  "name": "Metro Transit Wayfinding",
+  "description": "Real-time municipal public transit wayfinding system with live bus arrival timings, capacity indicators, MRT interchange navigation, and journey planning.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
