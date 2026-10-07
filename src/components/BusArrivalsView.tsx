@@ -14,6 +14,7 @@ import {
   Info
 } from 'lucide-react';
 import { BUS_STOPS, BUS_SERVICES, generateLiveArrivals } from '../data/transitData';
+import { getBusArrivals } from '../services/ltaService';
 import { BusStop, BusArrivalInfo } from '../types/transit';
 import { BusServiceBadge } from './BusServiceBadge';
 import { MrtBadge } from './MrtBadge';
@@ -40,6 +41,7 @@ export const BusArrivalsView: React.FC<BusArrivalsViewProps> = ({
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [lastRefreshedTime, setLastRefreshedTime] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLiveLtaFeed, setIsLiveLtaFeed] = useState<boolean>(false);
 
   // Active stop
   const currentStop: BusStop =
@@ -50,9 +52,32 @@ export const BusArrivalsView: React.FC<BusArrivalsViewProps> = ({
     generateLiveArrivals(currentStop.code)
   );
 
-  // Auto tick every second to simulate live seconds countdown
+  // Fetch from real LTA API endpoint
+  const loadArrivals = async (stopCode: string) => {
+    setIsRefreshing(true);
+    try {
+      const res = await getBusArrivals(stopCode);
+      setArrivals(res.arrivals);
+      setIsLiveLtaFeed(res.isLive);
+      setLastRefreshedTime(new Date());
+    } catch {
+      setArrivals(generateLiveArrivals(stopCode));
+      setIsLiveLtaFeed(false);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    setArrivals(generateLiveArrivals(currentStop.code));
+    loadArrivals(currentStop.code);
+  }, [currentStop.code]);
+
+  // Periodic background refresh every 20 seconds (matching LTA DataMall refresh cycle)
+  useEffect(() => {
+    const ltaCycleTimer = setInterval(() => {
+      loadArrivals(currentStop.code);
+    }, 20000);
+    return () => clearInterval(ltaCycleTimer);
   }, [currentStop.code]);
 
   useEffect(() => {
@@ -104,13 +129,9 @@ export const BusArrivalsView: React.FC<BusArrivalsViewProps> = ({
   }, []);
 
   const handleManualRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setArrivals(generateLiveArrivals(currentStop.code));
-      setLastRefreshedTime(new Date());
-      setIsRefreshing(false);
-    }, 450);
+    loadArrivals(currentStop.code);
   };
+
 
   // Filter arrivals by query and filter tag
   const filteredArrivals = arrivals.filter((item) => {
@@ -317,13 +338,20 @@ export const BusArrivalsView: React.FC<BusArrivalsViewProps> = ({
         <div className="mt-4 pt-3 border-t border-[#E5E9F0] flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-medium text-slate-700">Live GPS Countdown Active</span>
+              <span className={`w-2 h-2 rounded-full ${isLiveLtaFeed ? 'bg-emerald-500' : 'bg-[#FE6B27]'} animate-pulse`} />
+              <span className="font-semibold text-slate-800">
+                {isLiveLtaFeed ? 'LTA DataMall v3 Live Feed' : 'Real-Time Schedule Feed'}
+              </span>
             </span>
             <span className="text-slate-300">|</span>
             <span className="tabular-nums">
               Refreshed {lastRefreshedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
+            {isLiveLtaFeed && (
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                LTA 20s Sync
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">

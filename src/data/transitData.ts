@@ -490,6 +490,19 @@ export const MRT_LINES: MrtLine[] = [
 
 export const BUS_STOPS: BusStop[] = [
   {
+    code: '04121',
+    description: 'Old Hill St Police Stn',
+    roadName: 'Hill St',
+    mrtConnections: [
+      { lineCode: 'NEL', stationCode: 'NE5', stationName: 'Clarke Quay' },
+      { lineCode: 'DTL', stationCode: 'DT20', stationName: 'Fort Canning' }
+    ],
+    services: ['7', '124', '147', '166', '174', '175', '190'],
+    lat: 1.2907,
+    lng: 103.8488,
+    isInterchange: false
+  },
+  {
     code: '03223',
     description: 'Opp Hong Lim Cplx',
     roadName: 'Upper Cross St',
